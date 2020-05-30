@@ -1,0 +1,13 @@
+﻿version: '3.6'
+services:
+  book-to-kindle:
+    build: 
+      context: ..
+      dockerfile: BookToKindle/Dockerfile
+    image: book-to-kindle:latest
+    container_name: book-to-kindle
+
+
+
+      
+    

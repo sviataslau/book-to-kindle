@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookToKindle", "BookToKindle\BookToKindle.csproj", "{21FB07EB-A97E-4A75-BE45-3AE56C9831B7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{21FB07EB-A97E-4A75-BE45-3AE56C9831B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21FB07EB-A97E-4A75-BE45-3AE56C9831B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21FB07EB-A97E-4A75-BE45-3AE56C9831B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21FB07EB-A97E-4A75-BE45-3AE56C9831B7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
