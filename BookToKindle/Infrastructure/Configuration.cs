@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BookToKindle.Infrastructure
 {
-	public static class Configuration
+	internal static class Configuration
 	{
 		private static IConfiguration configuration = default!;
 

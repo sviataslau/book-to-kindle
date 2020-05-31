@@ -17,7 +17,7 @@ namespace BookToKindle.Domain
 		/// <param name="title">Title, without extension</param>
 		/// <param name="format">Book format</param>
 		/// <param name="filePath">Filesystem path to the book</param>
-		private Book(string title, BookFormat format, string filePath)
+		public Book(string title, BookFormat format, string filePath)
 		{
 			this.Title = title;
 			this.Format = format;
@@ -25,13 +25,5 @@ namespace BookToKindle.Domain
 		}
 
 		public Stream Content() => File.OpenRead(this.FilePath);
-
-		/// <summary>
-		/// Create the book based off the existing file
-		/// </summary>
-		/// <param name="title">Title, without extension</param>
-		/// <param name="path">Filesystem path to the book</param>
-		/// <returns>Book object</returns>
-		public static Book FromFile(string title, string path) => new Book(title, BookFormat.OfBookFile(path), path);
 	}
 }

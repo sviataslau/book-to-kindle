@@ -1,6 +1,9 @@
-﻿using System.Diagnostics;
-using System.IO;
+﻿using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using BookToKindle.Domain;
+using RunProcessAsTask;
+using Serilog;
 
 namespace BookToKindle.Infrastructure
 {
@@ -16,8 +19,10 @@ namespace BookToKindle.Infrastructure
 		/// <param name="targetFormat">Target format file extension (e.g. .mobi)</param>
 		/// <param name="arguments">Additional Calibre command line arguments</param>
 		/// <returns>Converted book</returns>
-		public static Book Convert(Book source, BookFormat targetFormat, string arguments)
+		public static async Task<Book> ConvertAsync(Book source, BookFormat targetFormat, string arguments)
 		{
+			using MeasuredOperation operation =
+				new MeasuredOperation($"Converting {source.Title} to {targetFormat.Name}");
 			string? fileName = Path.GetFileNameWithoutExtension(source.FilePath);
 			if (source.Format.Equals(targetFormat))
 			{
@@ -25,9 +30,14 @@ namespace BookToKindle.Infrastructure
 			}
 			string? directoryName = Path.GetDirectoryName(source.FilePath);
 			string outputPath = Path.Combine(directoryName ?? string.Empty, $"{fileName}{targetFormat}");
-			Process process = Process.Start("ebook-convert", $"{source.FilePath} {outputPath} {arguments}");
-			process.WaitForExit();
-			return Book.FromFile(source.Title, outputPath);
+			ProcessResults result =
+				await ProcessEx.RunAsync("ebook-convert", $"{source.FilePath} {outputPath} {arguments}");
+			Log.Information("{@Output}", result.StandardOutput);
+			if (result.StandardError.Any())
+			{
+				Log.Error("{@Output}", result.StandardError);
+			}
+			return new Book(source.Title, targetFormat, outputPath);
 		}
 	}
 }

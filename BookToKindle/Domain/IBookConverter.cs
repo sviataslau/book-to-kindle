@@ -1,7 +1,10 @@
-﻿namespace BookToKindle.Domain
+﻿using System.Threading.Tasks;
+
+namespace BookToKindle.Domain
 {
 	internal interface IBookConverter
 	{
-		Book Convert(Book source);
+		BookFormat Format { get; }
+		Task<Book> ConvertAsync(Book source);
 	}
 }

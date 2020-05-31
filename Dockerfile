@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/core/runtime:3.1 AS base
+﻿FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS base
 
 # Install Calibre
 ARG APT_OPTIONS="-o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false"

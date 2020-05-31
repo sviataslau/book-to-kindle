@@ -9,7 +9,7 @@ namespace BookToKindle.Infrastructure
 	/// <summary>
 	/// A class to delete containing files upon disposal
 	/// </summary>
-	public sealed class TempFiles : IDisposable
+	internal sealed class TempFiles : IDisposable
 	{
 		private readonly IList<string> files = new List<string>();
 
