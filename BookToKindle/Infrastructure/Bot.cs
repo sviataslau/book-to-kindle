@@ -17,7 +17,7 @@ namespace BookToKindle.Infrastructure
 	public sealed class Bot
 	{
 		private static readonly IReadOnlyCollection<IBookConverter> Converters = new IBookConverter[]
-			{ new Mobi(), new Mobi8(), new Azw3() };
+			{ new Mobi(), new Azw3() };
 
 		private static readonly IDictionary<BookFormat, IBookConverter> SupportedFormats =
 			Converters.ToDictionary(c => c.Format, c => c);
@@ -44,10 +44,25 @@ namespace BookToKindle.Infrastructure
 				throw new ArgumentException($"Message {message.MessageId} is a document, not a text");
 			}
 
-			await this.bot.SendTextMessageAsync(message.Chat.Id,
-				"Sorry, I can't work with that. Send me a book file (mobi, epub, fb2, txt), please.",
-				ParseMode.Markdown,
-				replyToMessageId: message.MessageId);
+			if (message.IsCommand())
+			{
+				switch (message.Text)
+				{
+					case Command.Start:
+						await this.bot.SendTextMessageAsync(message.Chat.Id,
+							"Hey! Send me a book file (mobi, epub, fb2, txt) and I will convert it to Kindle supported format.",
+							ParseMode.Markdown,
+							replyToMessageId: message.MessageId);
+						break;
+				}
+			}
+			else
+			{
+				await this.bot.SendTextMessageAsync(message.Chat.Id,
+					"Sorry, I can't work with that. Send me a book file (mobi, epub, fb2, txt), please.",
+					ParseMode.Markdown,
+					replyToMessageId: message.MessageId);
+			}
 		}
 
 		public async Task HandleDocumentAsync(Message message)
@@ -67,35 +82,36 @@ namespace BookToKindle.Infrastructure
 
 		public async Task HandleCallbackAsync(CallbackQuery callback)
 		{
-			Message message = callback.Message.ReplyToMessage;
-			if (message == null || !message.IsDocument())
+			Message documentMessage = callback.Message.ReplyToMessage;
+			if (documentMessage == null || !documentMessage.IsDocument())
 			{
-				Log.Information("Unexpected original message {@Message}", message);
+				Log.Information("Unexpected original message {@Message}", documentMessage);
 				return;
 			}
-			
+
 			BookFormat? desiredFormat = BookFormat.TryParse(callback.Data);
 			if (desiredFormat == null)
 			{
 				Log.Error("Can't parse callback {@Callback}", callback);
 				return;
 			}
-			await ProcessBookAsync(message.Document, message.Chat.Id, desiredFormat);
+			long chatId = documentMessage.Chat.Id;
+			await this.bot.DeleteMessageAsync(chatId, callback.Message.MessageId);
+			await ProcessBookAsync(documentMessage.Document, chatId, desiredFormat);
 		}
 
 		private async Task ProcessBookAsync(Document document, long chatId, BookFormat desiredFormat)
 		{
-			using var tempFiles = new TempFiles();
 			string fileName = document.FileName;
+			Message loadingMessage = await SendLoadingMessageAsync();
+			using var tempFiles = new TempFiles();
 			try
 			{
-				await this.bot.SendTextMessageAsync(chatId, $"Wait a bit. My dwarfs are working on *{fileName}*",
-					ParseMode.Markdown);
 				Book originalBook = await DownloadOriginalBookAsync(document);
 				tempFiles.Add(originalBook.FilePath);
 				Book convertedBook = await ConvertBookAsync(desiredFormat, originalBook);
 				tempFiles.Add(convertedBook.FilePath);
-
+				await DeleteLoadingMessageAsync(loadingMessage);
 				if (convertedBook.Equals(originalBook))
 				{
 					await this.bot.SendTextMessageAsync(chatId, $"Your book *{originalBook.Title}* is already good!",
@@ -113,9 +129,24 @@ namespace BookToKindle.Infrastructure
 			catch (Exception exception)
 			{
 				Log.Error(exception, $"Exception happened when converting {document.FileId}");
+				await DeleteLoadingMessageAsync(loadingMessage);
 				await this.bot.SendTextMessageAsync(chatId,
 					$"Sorry, something went wrong with *{fileName}*. Try sending the book again.",
 					ParseMode.Markdown);
+			}
+
+			Task<Message> SendLoadingMessageAsync()
+			{
+				return this.bot.SendTextMessageAsync(chatId,
+					$"Wait a bit. My dwarfs are working on *{fileName}*",
+					ParseMode.Markdown);
+			}
+
+			Task DeleteLoadingMessageAsync(Message message)
+			{
+				return message != null
+					? this.bot.DeleteMessageAsync(chatId, message.MessageId)
+					: Task.CompletedTask;
 			}
 		}
 
@@ -131,15 +162,16 @@ namespace BookToKindle.Infrastructure
 				BookFormat.FromExtension(Path.GetExtension(fileName)), originalBookPath);
 		}
 
-		private static Task<Book> ConvertBookAsync(BookFormat desiredFormat, Book originalBook)
+		private static async Task<Book> ConvertBookAsync(BookFormat desiredFormat, Book originalBook)
 		{
 			IBookConverter? converter = CreateConverter();
 			if (converter == null)
 			{
 				throw new NotSupportedException($"No converter for {desiredFormat}");
 			}
-
-			return converter.ConvertAsync(originalBook);
+			using MeasuredOperation operation =
+				new MeasuredOperation($"Converting {originalBook.Title} to {desiredFormat.Name}");
+			return await converter.ConvertAsync(originalBook);
 
 			IBookConverter? CreateConverter()
 			{

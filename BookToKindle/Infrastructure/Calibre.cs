@@ -21,8 +21,6 @@ namespace BookToKindle.Infrastructure
 		/// <returns>Converted book</returns>
 		public static async Task<Book> ConvertAsync(Book source, BookFormat targetFormat, string arguments)
 		{
-			using MeasuredOperation operation =
-				new MeasuredOperation($"Converting {source.Title} to {targetFormat.Name}");
 			string? fileName = Path.GetFileNameWithoutExtension(source.FilePath);
 			if (source.Format.Equals(targetFormat))
 			{
